@@ -151,6 +151,9 @@ static const property_meta_type key_meta[const_max_key] = {
   property_meta_type{"line-pattern",
                      [](enumeration_wrapper e) { return line_pattern_e(line_pattern_enum(e.value)).as_string(); },
                      property_types::target_line_pattern},
+  property_meta_type{"anchor-set", nullptr, property_types::target_string},
+  property_meta_type{"anchor-cond", nullptr, property_types::target_string},
+  property_meta_type{"allow-overlap-anchor", nullptr, property_types::target_string},
 
 };
 

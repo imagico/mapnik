@@ -38,6 +38,7 @@
 #include <mapnik/font_set.hpp>
 #include <mapnik/xml_loader.hpp>
 #include <mapnik/expression.hpp>
+#include <mapnik/expression_string.hpp>
 #include <mapnik/parse_path.hpp>
 #include <mapnik/transform/parse_transform.hpp>
 #include <mapnik/raster_colorizer.hpp>
@@ -1052,6 +1053,17 @@ void map_parser::parse_point_symbolizer(rule& rule, xml_node const& node)
             put(sym, keys::file, parse_path(filename));
         }
 
+        optional<std::string> anchor_set = node.get_opt_attr<std::string>("anchor-set");
+        optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+        optional<std::string> allow_overlap_anchor = node.get_opt_attr<std::string>("allow-overlap-anchor");
+
+        if (anchor_set && !anchor_set->empty())
+            put(sym, keys::anchor_set, parse_expression(*anchor_set));
+        if (anchor_cond && !anchor_cond->empty())
+            put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+        if (allow_overlap_anchor && !allow_overlap_anchor->empty())
+            put(sym, keys::allow_overlap_anchor, parse_expression(*allow_overlap_anchor));
+
         rule.append(std::move(sym));
     }
     catch (config_error const& ex)
@@ -1130,6 +1142,18 @@ void map_parser::parse_markers_symbolizer(rule& rule, xml_node const& node)
             ensure_exists(filename);
             put(sym, keys::file, parse_path(filename));
         }
+
+        optional<std::string> anchor_set = node.get_opt_attr<std::string>("anchor-set");
+        optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+        optional<std::string> allow_overlap_anchor = node.get_opt_attr<std::string>("allow-overlap-anchor");
+
+        if (anchor_set && !anchor_set->empty())
+            put(sym, keys::anchor_set, parse_expression(*anchor_set));
+        if (anchor_cond && !anchor_cond->empty())
+            put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+        if (allow_overlap_anchor && !allow_overlap_anchor->empty())
+            put(sym, keys::allow_overlap_anchor, parse_expression(*allow_overlap_anchor));
+
         set_symbolizer_property<symbolizer_base, double>(sym, keys::opacity, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::fill_opacity, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::spacing, node);
@@ -1248,6 +1272,7 @@ void map_parser::parse_text_symbolizer(rule& rule, xml_node const& node)
     {
         text_placements_ptr placements;
         optional<std::string> placement_type = node.get_opt_attr<std::string>("placement-type");
+
         if (placement_type)
         {
             placements = placements::registry::instance().from_xml(*placement_type, node, fontsets_, false);
@@ -1266,6 +1291,25 @@ void map_parser::parse_text_symbolizer(rule& rule, xml_node const& node)
             text_symbolizer sym;
             parse_symbolizer_base(sym, node);
             put<text_placements_ptr>(sym, keys::text_placements_, placements);
+
+            optional<std::string> anchor_set = node.get_opt_attr<std::string>("anchor-set");
+            optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+            optional<std::string> allow_overlap_anchor = node.get_opt_attr<std::string>("allow-overlap-anchor");
+
+/*
+            if (anchor_cond)
+                MAPNIK_LOG_ERROR(map_parser) << "anchor_cond(text_symbolizer): " << *anchor_cond << "/" << to_expression_string(*parse_expression(*anchor_cond));
+            else
+                MAPNIK_LOG_ERROR(map_parser) << "anchor_cond(text_symbolizer): --";
+*/
+
+            if (anchor_set && !anchor_set->empty())
+                put(sym, keys::anchor_set, parse_expression(*anchor_set));
+            if (anchor_cond && !anchor_cond->empty())
+                put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+            if (allow_overlap_anchor && !allow_overlap_anchor->empty())
+                put(sym, keys::allow_overlap_anchor, parse_expression(*allow_overlap_anchor));
+
             set_symbolizer_property<symbolizer_base, composite_mode_e>(sym, keys::halo_comp_op, node);
             set_symbolizer_property<symbolizer_base, halo_rasterizer_enum>(sym, keys::halo_rasterizer, node);
             set_symbolizer_property<symbolizer_base, transform_type>(sym, keys::halo_transform, node);
@@ -1305,6 +1349,18 @@ void map_parser::parse_shield_symbolizer(rule& rule, xml_node const& node)
         shield_symbolizer sym;
         parse_symbolizer_base(sym, node);
         put<text_placements_ptr>(sym, keys::text_placements_, placements);
+
+        optional<std::string> anchor_set = node.get_opt_attr<std::string>("anchor-set");
+        optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+        optional<std::string> allow_overlap_anchor = node.get_opt_attr<std::string>("allow-overlap-anchor");
+
+        if (anchor_set && !anchor_set->empty())
+            put(sym, keys::anchor_set, parse_expression(*anchor_set));
+        if (anchor_cond && !anchor_cond->empty())
+            put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+        if (allow_overlap_anchor && !allow_overlap_anchor->empty())
+            put(sym, keys::allow_overlap_anchor, parse_expression(*allow_overlap_anchor));
+
         set_symbolizer_property<symbolizer_base, transform_type>(sym, keys::image_transform, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::shield_dx, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::shield_dy, node);

@@ -40,6 +40,9 @@ struct markers_dispatch_params
     bool snap_to_pixels;
     double scale_factor;
     value_double opacity;
+    std::string anchor_set;
+    std::string anchor_cond;
+    std::string allow_overlap_anchor;
 
     markers_dispatch_params(box2d<double> const& size,
                             agg::trans_affine const& tr,

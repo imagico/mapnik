@@ -49,7 +49,10 @@ class placement_finder : util::noncopyable
                      box2d<double> const& extent,
                      text_placement_info const& placement_info,
                      face_manager_freetype& font_manager,
-                     double scale_factor);
+                     double scale_factor,
+                     std::string const& anchor_set,
+                     std::string const& anchor_cond,
+                     std::string const& allow_overlap_anchor);
 
     // Try to place a single label at the given point.
     bool find_point_placement(pixel_position const& pos);
@@ -87,6 +90,11 @@ class placement_finder : util::noncopyable
 
     double scale_factor_;
     face_manager_freetype& font_manager_;
+
+    std::string anchor_set_;
+    std::string anchor_cond_;
+    std::string allow_overlap_anchor_;
+    bool has_anchor_;
 
     placements_list placements_;
     std::vector<text_layout_ptr> processed_layouts_;

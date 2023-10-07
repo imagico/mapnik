@@ -24,6 +24,7 @@
 #define MAPNIK_LABEL_COLLISION_DETECTOR_HPP
 
 // mapnik
+#include <mapnik/debug.hpp>
 #include <mapnik/quad_tree.hpp>
 #include <mapnik/util/noncopyable.hpp>
 #include <mapnik/value/types.hpp>
@@ -32,10 +33,12 @@
 MAPNIK_DISABLE_WARNING_PUSH
 #include <mapnik/warning_ignore.hpp>
 #include <unicode/unistr.h>
+#include <boost/algorithm/string.hpp>
 MAPNIK_DISABLE_WARNING_POP
 
 // stl
 #include <vector>
+#include <set>
 
 namespace mapnik {
 // this needs to be tree structure
@@ -134,14 +137,26 @@ class label_collision_detector4 : util::noncopyable
             : box(b)
             , text(t)
         {}
-
+        label(box2d<double> const& b, std::string const& a)
+            : box(b)
+            , text()
+            , anchor(a)
+        {}
+        label(box2d<double> const& b, mapnik::value_unicode_string const& t, std::string const& a)
+            : box(b)
+            , text(t)
+            , anchor(a)
+        {}
         box2d<double> box;
         mapnik::value_unicode_string text;
+        std::string anchor;
     };
 
   private:
     using tree_t = quad_tree<label>;
     tree_t tree_;
+
+    std::set<std::string> anchors_;
 
   public:
     using query_iterator = tree_t::query_iterator;
@@ -164,6 +179,30 @@ class label_collision_detector4 : util::noncopyable
         return true;
     }
 
+    bool has_placement(box2d<double> const& box, std::string const& anchor_exclude)
+    {
+        tree_t::query_iterator tree_itr = tree_.query_in_box(box);
+        tree_t::query_iterator tree_end = tree_.query_end();
+
+        if (!anchor_exclude.empty())
+            MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement anchor_exclude: " << anchor_exclude;
+
+        for (; tree_itr != tree_end; ++tree_itr)
+        {
+            if (anchor_exclude.empty() || (anchor_exclude != tree_itr->get().anchor))
+                if (tree_itr->get().box.intersects(box))
+                {
+                    if (!anchor_exclude.empty())
+                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << anchor_exclude << "/" << tree_itr->get().anchor;
+                    else
+                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << tree_itr->get().anchor;
+                    return false;
+                }
+        }
+
+        return true;
+    }
+
     bool has_placement(box2d<double> const& box, double margin)
     {
         box2d<double> const& margin_box =
@@ -180,6 +219,27 @@ class label_collision_detector4 : util::noncopyable
             {
                 return false;
             }
+        }
+        return true;
+    }
+
+    bool has_placement(box2d<double> const& box, double margin, std::string const& anchor_exclude)
+    {
+        box2d<double> const& margin_box =
+          (margin > 0
+             ? box2d<double>(box.minx() - margin, box.miny() - margin, box.maxx() + margin, box.maxy() + margin)
+             : box);
+
+        tree_t::query_iterator tree_itr = tree_.query_in_box(margin_box);
+        tree_t::query_iterator tree_end = tree_.query_end();
+
+        for (; tree_itr != tree_end; ++tree_itr)
+        {
+            if (anchor_exclude.empty() || (anchor_exclude != tree_itr->get().anchor))
+                if (tree_itr->get().box.intersects(margin_box))
+                {
+                    return false;
+                }
         }
         return true;
     }
@@ -220,6 +280,70 @@ class label_collision_detector4 : util::noncopyable
         return true;
     }
 
+    bool has_placement(box2d<double> const& box,
+                       double margin,
+                       mapnik::value_unicode_string const& text,
+                       double repeat_distance,
+                       std::string const& anchor_exclude)
+    {
+        // Don't bother with any of the repeat checking unless the repeat distance is greater than the margin
+        if (repeat_distance <= margin)
+        {
+            return has_placement(box, margin, anchor_exclude);
+        }
+
+        box2d<double> repeat_box(box.minx() - repeat_distance,
+                                 box.miny() - repeat_distance,
+                                 box.maxx() + repeat_distance,
+                                 box.maxy() + repeat_distance);
+
+        box2d<double> const& margin_box =
+          (margin > 0
+             ? box2d<double>(box.minx() - margin, box.miny() - margin, box.maxx() + margin, box.maxy() + margin)
+             : box);
+
+        tree_t::query_iterator tree_itr = tree_.query_in_box(repeat_box);
+        tree_t::query_iterator tree_end = tree_.query_end();
+
+        for (; tree_itr != tree_end; ++tree_itr)
+        {
+            if (anchor_exclude.empty() || (anchor_exclude != tree_itr->get().anchor))
+                if (tree_itr->get().box.intersects(margin_box) ||
+                    (text == tree_itr->get().text && tree_itr->get().box.intersects(repeat_box)))
+                {
+                    return false;
+                }
+        }
+
+        return true;
+    }
+
+    bool has_anchor(std::string const& anchor_cond)
+    {
+        if (anchor_cond.empty()) return true;
+
+        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_anchor: " << anchor_cond;
+
+        std::vector<std::string> conds;
+        boost::split(conds, anchor_cond, boost::is_any_of(","));
+
+        for (auto & cond : conds)
+        {
+            boost::algorithm::trim(cond);
+            if (cond.front() == '!')
+            {
+                if (anchors_.count(cond.substr(1))!=0)
+                    return false;
+            }
+            else
+            {
+                if (anchors_.count(cond)==0)
+                    return false;
+            }
+        }
+        return true;
+    }
+
     void insert(box2d<double> const& box)
     {
         if (tree_.extent().intersects(box))
@@ -236,7 +360,29 @@ class label_collision_detector4 : util::noncopyable
         }
     }
 
-    void clear() { tree_.clear(); }
+    void insert(box2d<double> const& box, std::string const& anchor)
+    {
+        if (tree_.extent().intersects(box))
+        {
+            tree_.insert(label(box, anchor), box);
+        }
+    }
+
+    void insert(box2d<double> const& box, mapnik::value_unicode_string const& text, std::string const& anchor)
+    {
+        if (tree_.extent().intersects(box))
+        {
+            tree_.insert(label(box, text, anchor), box);
+        }
+    }
+
+    void add_anchor(std::string const& anchor)
+    {
+        MAPNIK_LOG_ERROR(label_collision_detector4) << "add_anchor: " << anchor;
+        anchors_.insert(anchor);
+    }
+
+    void clear() { tree_.clear(); anchors_.clear(); }
 
     box2d<double> const& extent() const { return tree_.extent(); }
 

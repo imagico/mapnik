@@ -383,7 +383,10 @@ text_symbolizer_helper::text_symbolizer_helper(text_symbolizer const& sym,
                                                box2d<double> const& query_extent,
                                                agg::trans_affine const& affine_trans)
     : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent)
-    , finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor)
+    , anchor_set_(mapnik::get<std::string, keys::anchor_set>(sym, feature, vars))
+    , anchor_cond_(mapnik::get<std::string, keys::anchor_cond>(sym, feature, vars))
+    , allow_overlap_anchor_(mapnik::get<std::string, keys::allow_overlap_anchor>(sym, feature, vars))
+    , finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor, anchor_set_, anchor_cond_, allow_overlap_anchor_)
     , adapter_(finder_, false)
     , converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
@@ -545,7 +548,10 @@ text_symbolizer_helper::text_symbolizer_helper(shield_symbolizer const& sym,
                                                box2d<double> const& query_extent,
                                                agg::trans_affine const& affine_trans)
     : base_symbolizer_helper(sym, feature, vars, prj_trans, width, height, scale_factor, t, query_extent)
-    , finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor)
+    , anchor_set_(mapnik::get<std::string, keys::anchor_set>(sym, feature, vars))
+    , anchor_cond_(mapnik::get<std::string, keys::anchor_cond>(sym, feature, vars))
+    , allow_overlap_anchor_(mapnik::get<std::string, keys::allow_overlap_anchor>(sym, feature, vars))
+    , finder_(feature, vars, detector, dims_, *info_ptr_, font_manager, scale_factor, anchor_set_, anchor_cond_, allow_overlap_anchor_)
     , adapter_(finder_, true)
     , converter_(query_extent_, sym_, t, prj_trans, affine_trans, feature, vars, scale_factor)
 {
