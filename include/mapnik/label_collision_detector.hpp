@@ -189,7 +189,25 @@ class label_collision_detector4 : util::noncopyable
 
         for (; tree_itr != tree_end; ++tree_itr)
         {
-            if (anchor_exclude.empty() || (anchor_exclude != tree_itr->get().anchor))
+            bool do_exclude = false;
+            if (!anchor_exclude.empty())
+            {
+                std::vector<std::string> conds;
+                boost::split(conds, anchor_exclude, boost::is_any_of(","));
+
+                for (auto & cond : conds)
+                {
+                    boost::algorithm::trim(cond);
+
+                    if (cond == tree_itr->get().anchor)
+                    {
+                        do_exclude = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!do_exclude)
                 if (tree_itr->get().box.intersects(box))
                 {
                     if (!anchor_exclude.empty())
@@ -235,7 +253,25 @@ class label_collision_detector4 : util::noncopyable
 
         for (; tree_itr != tree_end; ++tree_itr)
         {
-            if (anchor_exclude.empty() || (anchor_exclude != tree_itr->get().anchor))
+            bool do_exclude = false;
+            if (!anchor_exclude.empty())
+            {
+                std::vector<std::string> conds;
+                boost::split(conds, anchor_exclude, boost::is_any_of(","));
+
+                for (auto & cond : conds)
+                {
+                    boost::algorithm::trim(cond);
+
+                    if (cond == tree_itr->get().anchor)
+                    {
+                        do_exclude = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!do_exclude)
                 if (tree_itr->get().box.intersects(margin_box))
                 {
                     return false;
@@ -307,7 +343,25 @@ class label_collision_detector4 : util::noncopyable
 
         for (; tree_itr != tree_end; ++tree_itr)
         {
-            if (anchor_exclude.empty() || (anchor_exclude != tree_itr->get().anchor))
+            bool do_exclude = false;
+            if (!anchor_exclude.empty())
+            {
+                std::vector<std::string> conds;
+                boost::split(conds, anchor_exclude, boost::is_any_of(","));
+
+                for (auto & cond : conds)
+                {
+                    boost::algorithm::trim(cond);
+
+                    if (cond == tree_itr->get().anchor)
+                    {
+                        do_exclude = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!do_exclude)
                 if (tree_itr->get().box.intersects(margin_box) ||
                     (text == tree_itr->get().text && tree_itr->get().box.intersects(repeat_box)))
                 {
