@@ -140,16 +140,18 @@ class label_collision_detector4 : util::noncopyable
         label(box2d<double> const& b, std::string const& a)
             : box(b)
             , text()
-            , anchor(a)
-        {}
+        {
+            boost::split(anchors, a, boost::is_any_of(","));
+        }
         label(box2d<double> const& b, mapnik::value_unicode_string const& t, std::string const& a)
             : box(b)
             , text(t)
-            , anchor(a)
-        {}
+        {
+            boost::split(anchors, a, boost::is_any_of(","));
+        }
         box2d<double> box;
         mapnik::value_unicode_string text;
-        std::string anchor;
+        std::set<std::string> anchors;
     };
 
   private:
@@ -199,7 +201,7 @@ class label_collision_detector4 : util::noncopyable
                 {
                     boost::algorithm::trim(cond);
 
-                    if (cond == tree_itr->get().anchor)
+                    if (tree_itr->get().anchors.count(cond)!=0)
                     {
                         do_exclude = true;
                         break;
@@ -210,10 +212,17 @@ class label_collision_detector4 : util::noncopyable
             if (!do_exclude)
                 if (tree_itr->get().box.intersects(box))
                 {
+                    std::string s;
+                    for (auto const& a : tree_itr->get().anchors)
+                    {
+                      s += a;
+                      s += ",";
+                    }
+                    s.pop_back();
                     if (!anchor_exclude.empty())
-                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << anchor_exclude << "/" << tree_itr->get().anchor;
+                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << anchor_exclude << "/" << s;
                     else
-                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << tree_itr->get().anchor;
+                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << s;
                     return false;
                 }
         }
@@ -263,7 +272,7 @@ class label_collision_detector4 : util::noncopyable
                 {
                     boost::algorithm::trim(cond);
 
-                    if (cond == tree_itr->get().anchor)
+                    if (tree_itr->get().anchors.count(cond)!=0)
                     {
                         do_exclude = true;
                         break;
@@ -353,7 +362,7 @@ class label_collision_detector4 : util::noncopyable
                 {
                     boost::algorithm::trim(cond);
 
-                    if (cond == tree_itr->get().anchor)
+                    if (tree_itr->get().anchors.count(cond)!=0)
                     {
                         do_exclude = true;
                         break;
@@ -433,7 +442,24 @@ class label_collision_detector4 : util::noncopyable
     void add_anchor(std::string const& anchor)
     {
         MAPNIK_LOG_ERROR(label_collision_detector4) << "add_anchor: " << anchor;
-        anchors_.insert(anchor);
+
+        std::vector<std::string> anchors;
+        boost::split(anchors, anchor, boost::is_any_of(","));
+
+        for (auto & a : anchors)
+        {
+            boost::algorithm::trim(a);
+            // not sure how useful it is to remove anchors - but there is no reason why this should be disallowed
+            // note this does not remove the corresponding entry from the collision detector, the anchor will still remain in there
+            if (a.front() == '!')
+            {
+                anchors_.erase(a.substr(1));
+            }
+            else
+            {
+                anchors_.insert(a);
+            }
+        }
     }
 
     void clear() { tree_.clear(); anchors_.clear(); }
