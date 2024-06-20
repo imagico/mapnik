@@ -58,6 +58,10 @@ void render_point_symbolizer(point_symbolizer const& sym,
         const point_placement_enum placement =
           get<point_placement_enum, keys::point_placement_type>(sym, feature, common.vars_);
 
+        std::string anchor_set = get<std::string, keys::anchor_set>(sym, feature, common.vars_);
+        std::string anchor_cond = get<std::string, keys::anchor_cond>(sym, feature, common.vars_);
+        std::string allow_overlap_anchor = get<std::string, keys::allow_overlap_anchor>(sym, feature, common.vars_);
+
         const box2d<double>& bbox = mark->bounding_box();
         const coord2d center = bbox.center();
 
@@ -96,12 +100,16 @@ void render_point_symbolizer(point_symbolizer const& sym,
         prj_trans.backward(x, y, z);
         common.t_.forward(&x, &y);
         label_ext.re_center(x, y);
-        if (allow_overlap || common.detector_->has_placement(label_ext))
+
+        if (anchor_cond.empty() || common.detector_->has_anchor(anchor_cond))
+        if (allow_overlap || common.detector_->has_placement(label_ext, allow_overlap_anchor))
         {
             render_marker(pixel_position(x, y), *mark, tr, opacity);
 
             if (!ignore_placement)
-                common.detector_->insert(label_ext);
+                common.detector_->insert(label_ext, anchor_set);
+            if (!anchor_set.empty())
+                common.detector_->add_anchor(anchor_set);
         }
     }
 }

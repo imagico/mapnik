@@ -109,13 +109,22 @@ class markers_point_placement : public markers_basic_placement
         {
             return false;
         }
-        if (!params_.allow_overlap && !detector_.has_placement(box))
+        if (!params_.allow_overlap && !detector_.has_placement(box, params_.allow_overlap_anchor))
+        {
+            return false;
+        }
+
+        if (!params_.anchor_cond.empty() && !detector_.has_anchor(params_.anchor_cond))
         {
             return false;
         }
         if (!ignore_placement)
         {
-            detector_.insert(box);
+            detector_.insert(box, params_.anchor_set);
+        }
+        if (!params_.anchor_set.empty())
+        {
+            detector_.add_anchor(params_.anchor_set);
         }
         return true;
     }

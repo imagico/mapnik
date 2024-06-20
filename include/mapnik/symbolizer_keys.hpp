@@ -95,6 +95,9 @@ enum class keys : std::uint8_t {
     ff_settings,
     extend,
     line_pattern,
+    anchor_set,
+    anchor_cond,
+    allow_overlap_anchor,
     MAX_SYMBOLIZER_KEY
 };
 

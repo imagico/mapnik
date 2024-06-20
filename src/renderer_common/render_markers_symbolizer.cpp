@@ -231,10 +231,16 @@ markers_dispatch_params::markers_dispatch_params(box2d<double> const& size,
     , placement_method(get<marker_placement_enum, keys::markers_placement_type>(sym, feature, vars))
     , ignore_placement(get<value_bool, keys::ignore_placement>(sym, feature, vars))
     , snap_to_pixels(snap)
+    , anchor_set(get<std::string, keys::anchor_set>(sym, feature, vars))
+    , anchor_cond(get<std::string, keys::anchor_cond>(sym, feature, vars))
+    , allow_overlap_anchor(get<std::string, keys::allow_overlap_anchor>(sym, feature, vars))
     , scale_factor(scale)
     , opacity(get<value_double, keys::opacity>(sym, feature, vars))
 {
     placement_params.spacing *= scale;
+    placement_params.anchor_set = anchor_set;
+    placement_params.anchor_cond = anchor_cond;
+    placement_params.allow_overlap_anchor = allow_overlap_anchor;
 }
 
 void render_markers_symbolizer(markers_symbolizer const& sym,

@@ -81,7 +81,10 @@ placement_finder::placement_finder(feature_impl const& feature,
                                    box2d<double> const& extent,
                                    text_placement_info const& placement_info,
                                    face_manager_freetype& font_manager,
-                                   double scale_factor)
+                                   double scale_factor,
+                                   std::string const& anchor_set,
+                                   std::string const& anchor_cond,
+                                   std::string const& allow_overlap_anchor)
     : feature_(feature)
     , attr_(attr)
     , detector_(detector)
@@ -89,6 +92,10 @@ placement_finder::placement_finder(feature_impl const& feature,
     , info_(placement_info)
     , text_props_(evaluate_text_properties(info_.properties, feature_, attr_))
     , scale_factor_(scale_factor)
+    , anchor_set_(anchor_set)
+    , anchor_cond_(anchor_cond)
+    , allow_overlap_anchor_(allow_overlap_anchor)
+    , has_anchor_(anchor_cond_.empty() || detector_.has_anchor(anchor_cond_))
     , font_manager_(font_manager)
     , placements_()
     , has_marker_(false)
@@ -158,6 +165,8 @@ text_upright_e placement_finder::simplify_upright(text_upright_e upright, double
 
 bool placement_finder::find_point_placement(pixel_position const& pos)
 {
+    if (!has_anchor_) return false;
+
     glyph_positions_ptr glyphs = std::make_unique<glyph_positions>();
     std::vector<box2d<double>> bboxes;
 
@@ -238,12 +247,14 @@ bool placement_finder::find_point_placement(pixel_position const& pos)
         {
             label_box.expand_to_include(box);
         }
-        detector_.insert(box, layouts_.text());
+        detector_.insert(box, layouts_.text(), anchor_set_);
     }
     // do not render text off the canvas
     if (extent_.intersects(label_box))
     {
         placements_.push_back(std::move(glyphs));
+        if (!anchor_set_.empty())
+            detector_.add_anchor(anchor_set_);
     }
 
     return true;
@@ -254,6 +265,8 @@ bool placement_finder::single_line_placement(vertex_cache& pp, text_upright_e or
     //
     // IMPORTANT NOTE: See note about coordinate systems in find_point_placement()!
     //
+
+    if (!has_anchor_) return false;
 
     vertex_cache::scoped_state begin(pp);
     text_upright_e real_orientation = simplify_upright(orientation, pp.angle());
@@ -410,12 +423,14 @@ bool placement_finder::single_line_placement(vertex_cache& pp, text_upright_e or
         {
             label_box.expand_to_include(box);
         }
-        detector_.insert(box, layouts_.text());
+        detector_.insert(box, layouts_.text(), anchor_set_);
     }
     // do not render text off the canvas
     if (extent_.intersects(label_box))
     {
         placements_.push_back(std::move(glyphs));
+        if (!anchor_set_.empty())
+            detector_.add_anchor(anchor_set_);
     }
 
     return true;
@@ -464,8 +479,8 @@ bool placement_finder::collision(const box2d<double>& box,
            (text_props_->minimum_padding > 0 &&
             !extent_.contains(box + (scale_factor_ * text_props_->minimum_padding))) ||
            (!text_props_->allow_overlap &&
-            ((repeat_key.length() == 0 && !detector_.has_placement(box, margin)) ||
-             (repeat_key.length() > 0 && !detector_.has_placement(box, margin, repeat_key, repeat_distance))));
+            ((repeat_key.length() == 0 && !detector_.has_placement(box, margin, allow_overlap_anchor_)) ||
+             (repeat_key.length() > 0 && !detector_.has_placement(box, margin, repeat_key, repeat_distance, allow_overlap_anchor_))));
 }
 
 void placement_finder::set_marker(marker_info_ptr m,
@@ -489,7 +504,9 @@ bool placement_finder::add_marker(glyph_positions_ptr& glyphs,
     bbox.move(real_pos.x, real_pos.y);
     if (collision(bbox, layouts_.text(), false))
         return false;
-    detector_.insert(bbox);
+    detector_.insert(bbox, anchor_set_);
+    if (!anchor_set_.empty())
+        detector_.add_anchor(anchor_set_);
     bboxes.push_back(std::move(bbox));
     glyphs->set_marker(marker_, real_pos);
     return true;

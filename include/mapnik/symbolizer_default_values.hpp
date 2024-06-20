@@ -396,6 +396,27 @@ struct symbolizer_default<smooth_algorithm_enum, keys::smooth_algorithm>
     static smooth_algorithm_enum value() { return smooth_algorithm_enum::SMOOTH_ALGORITHM_BASIC; }
 };
 
+// anchor_set
+template<>
+struct symbolizer_default<std::string, keys::anchor_set>
+{
+    static std::string value() { return ""; }
+};
+
+// anchor_cond
+template<>
+struct symbolizer_default<std::string, keys::anchor_cond>
+{
+    static std::string value() { return ""; }
+};
+
+// allow_overlap_anchor
+template<>
+struct symbolizer_default<std::string, keys::allow_overlap_anchor>
+{
+    static std::string value() { return ""; }
+};
+
 } // namespace mapnik
 
 #endif // MAPNIK_SYMBOLIZER_DEFAULT_VALUES_HPP

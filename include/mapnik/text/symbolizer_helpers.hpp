@@ -167,6 +167,10 @@ class text_symbolizer_helper : public base_symbolizer_helper
     bool next_point_placement() const;
     bool next_line_placement() const;
 
+    std::string anchor_set_;
+    std::string anchor_cond_;
+    std::string allow_overlap_anchor_;
+
     mutable placement_finder finder_;
 
     placement_finder_adapter<placement_finder> adapter_;
