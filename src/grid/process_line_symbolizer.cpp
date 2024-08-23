@@ -30,6 +30,7 @@
 #include <mapnik/grid/grid.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 #include <mapnik/geometry/geometry_type.hpp>
 
@@ -75,6 +76,9 @@ void grid_renderer<T>::process(line_symbolizer const& sym,
     }
 
     box2d<double> clipping_extent = common_.query_extent_;
+
+    if (!symbolizer_anchor_cond<line_symbolizer>(sym,  feature, common_))
+        return;
 
     bool clip = get<value_bool>(sym, keys::clip, feature, common_.vars_, false);
     double width = get<value_double>(sym, keys::stroke_width, feature, common_.vars_, 1.0);

@@ -36,6 +36,7 @@
 #include <mapnik/svg/svg_converter.hpp>
 #include <mapnik/svg/svg_renderer_agg.hpp>
 #include <mapnik/svg/svg_path_adapter.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/render_pattern.hpp>
 
 #include <mapnik/warning.hpp>
@@ -152,6 +153,8 @@ void agg_renderer<T0, T1>::process(polygon_pattern_symbolizer const& sym,
 {
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     if (filename.empty())
+        return;
+    if (!symbolizer_anchor_cond<polygon_pattern_symbolizer>(sym,  feature, common_))
         return;
     std::shared_ptr<mapnik::marker const> marker = marker_cache::instance().find(filename, true);
     agg_renderer_process_visitor_p<buffer_type>

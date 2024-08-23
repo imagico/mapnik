@@ -1204,6 +1204,12 @@ void map_parser::parse_line_pattern_symbolizer(rule& rule, xml_node const& node)
         ensure_exists(file);
         line_pattern_symbolizer sym;
         parse_symbolizer_base(sym, node);
+
+        optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+
+        if (anchor_cond && !anchor_cond->empty())
+            put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+
         put(sym, keys::file, parse_path(file));
         set_symbolizer_property<symbolizer_base, double>(sym, keys::opacity, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::offset, node);
@@ -1250,6 +1256,12 @@ void map_parser::parse_polygon_pattern_symbolizer(rule& rule, xml_node const& no
         ensure_exists(file);
         polygon_pattern_symbolizer sym;
         parse_symbolizer_base(sym, node);
+
+        optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+
+        if (anchor_cond && !anchor_cond->empty())
+            put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+
         put(sym, keys::file, parse_path(file));
         set_symbolizer_property<symbolizer_base, double>(sym, keys::opacity, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::gamma, node);
@@ -1432,6 +1444,12 @@ void map_parser::parse_line_symbolizer(rule& rule, xml_node const& node)
         line_symbolizer sym;
         parse_symbolizer_base(sym, node);
         parse_stroke(sym, node);
+
+        optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+
+        if (anchor_cond && !anchor_cond->empty())
+            put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+
         set_symbolizer_property<symbolizer_base, double>(sym, keys::offset, node);
         set_symbolizer_property<symbolizer_base, line_rasterizer_enum>(sym, keys::line_rasterizer, node);
         rule.append(std::move(sym));
@@ -1449,6 +1467,12 @@ void map_parser::parse_polygon_symbolizer(rule& rule, xml_node const& node)
     {
         polygon_symbolizer sym;
         parse_symbolizer_base(sym, node);
+
+        optional<std::string> anchor_cond = node.get_opt_attr<std::string>("anchor-cond");
+
+        if (anchor_cond && !anchor_cond->empty())
+            put(sym, keys::anchor_cond, parse_expression(*anchor_cond));
+
         set_symbolizer_property<symbolizer_base, color>(sym, keys::fill, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::fill_opacity, node);
         set_symbolizer_property<symbolizer_base, double>(sym, keys::gamma, node);

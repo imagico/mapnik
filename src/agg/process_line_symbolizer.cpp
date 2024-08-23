@@ -29,6 +29,7 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/clipping_extent.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 #include <mapnik/geometry/geometry_type.hpp>
@@ -131,6 +132,9 @@ void agg_renderer<T0, T1>::process(line_symbolizer const& sym,
         evaluate_transform(tr, feature, common_.vars_, *transform, common_.scale_factor_);
 
     box2d<double> clip_box = clipping_extent(common_);
+
+    if (!symbolizer_anchor_cond<line_symbolizer>(sym,  feature, common_))
+        return;
 
     const value_bool clip = get<value_bool, keys::clip>(sym, feature, common_.vars_);
     const value_double width = get<value_double, keys::stroke_width>(sym, feature, common_.vars_);

@@ -28,6 +28,7 @@
 #include <mapnik/cairo/cairo_renderer.hpp>
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 #include <mapnik/geometry/geometry_type.hpp>
 
@@ -71,6 +72,9 @@ void cairo_renderer<T>::process(line_symbolizer const& sym,
     {
         evaluate_transform(tr, feature, common_.vars_, *geom_transform, common_.scale_factor_);
     }
+
+    if (!symbolizer_anchor_cond<line_symbolizer>(sym,  feature, common_))
+        return;
 
     box2d<double> clipping_extent = common_.query_extent_;
     if (clip)

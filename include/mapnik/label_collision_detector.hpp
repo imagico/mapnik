@@ -220,9 +220,9 @@ class label_collision_detector4 : util::noncopyable
                     }
                     s.pop_back();
                     if (!anchor_exclude.empty())
-                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << anchor_exclude << "/" << s;
+                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << anchor_exclude << "/" << s << ";";
                     else
-                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << s;
+                        MAPNIK_LOG_ERROR(label_collision_detector4) << "has_placement collision: " << s << ";";
                     return false;
                 }
         }
@@ -396,12 +396,18 @@ class label_collision_detector4 : util::noncopyable
             if (cond.front() == '!')
             {
                 if (anchors_.count(cond.substr(1))!=0)
+                {
+                    //MAPNIK_LOG_ERROR(label_collision_detector4) << "has_anchor: " << cond << ": false";
                     return false;
+                }
             }
             else
             {
                 if (anchors_.count(cond)==0)
+                {
+                    //MAPNIK_LOG_ERROR(label_collision_detector4) << "has_anchor: " << cond << ": false";
                     return false;
+                }
             }
         }
         return true;
@@ -411,6 +417,7 @@ class label_collision_detector4 : util::noncopyable
     {
         if (tree_.extent().intersects(box))
         {
+            //MAPNIK_LOG_ERROR(label_collision_detector4) << "insert box";
             tree_.insert(label(box), box);
         }
     }
@@ -419,6 +426,7 @@ class label_collision_detector4 : util::noncopyable
     {
         if (tree_.extent().intersects(box))
         {
+            //MAPNIK_LOG_ERROR(label_collision_detector4) << "insert text";
             tree_.insert(label(box, text), box);
         }
     }
@@ -427,6 +435,7 @@ class label_collision_detector4 : util::noncopyable
     {
         if (tree_.extent().intersects(box))
         {
+            //MAPNIK_LOG_ERROR(label_collision_detector4) << "insert anchor: " << anchor;
             tree_.insert(label(box, anchor), box);
         }
     }
@@ -435,6 +444,7 @@ class label_collision_detector4 : util::noncopyable
     {
         if (tree_.extent().intersects(box))
         {
+            //MAPNIK_LOG_ERROR(label_collision_detector4) << "insert text anchor: " << anchor;
             tree_.insert(label(box, text, anchor), box);
         }
     }
@@ -453,10 +463,12 @@ class label_collision_detector4 : util::noncopyable
             // note this does not remove the corresponding entry from the collision detector, the anchor will still remain in there
             if (a.front() == '!')
             {
+                //MAPNIK_LOG_ERROR(label_collision_detector4) << "add_anchor: erase " << a ;
                 anchors_.erase(a.substr(1));
             }
             else
             {
+                //MAPNIK_LOG_ERROR(label_collision_detector4) << "add_anchor: insert " << a ;
                 anchors_.insert(a);
             }
         }

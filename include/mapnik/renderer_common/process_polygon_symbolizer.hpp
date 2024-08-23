@@ -31,6 +31,8 @@
 #include <mapnik/feature.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 
+#include <mapnik/label_collision_detector.hpp>
+
 namespace mapnik {
 
 template<typename vertex_converter_type, typename rasterizer_type, typename F>
@@ -52,6 +54,8 @@ void render_polygon_symbolizer(polygon_symbolizer const& sym,
     value_double smooth = get<value_double, keys::smooth>(sym, feature, common.vars_);
     value_double opacity = get<value_double, keys::fill_opacity>(sym, feature, common.vars_);
 
+    std::string anchor_cond = get<std::string, keys::anchor_cond>(sym, feature, common.vars_);
+
     vertex_converter_type
       converter(clip_box, sym, common.t_, prj_trans, tr, feature, common.vars_, common.scale_factor_);
 
@@ -70,7 +74,8 @@ void render_polygon_symbolizer(polygon_symbolizer const& sym,
     mapnik::util::apply_visitor(vertex_processor_type(apply), feature.get_geometry());
 
     color const& fill = get<mapnik::color, keys::fill>(sym, feature, common.vars_);
-    fill_func(fill, opacity);
+    if (anchor_cond.empty() || common.detector_->has_anchor(anchor_cond))
+        fill_func(fill, opacity);
 }
 
 } // namespace mapnik

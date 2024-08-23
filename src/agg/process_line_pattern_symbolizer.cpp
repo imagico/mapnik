@@ -33,6 +33,7 @@
 #include <mapnik/symbolizer.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/parse_path.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/clipping_extent.hpp>
 #include <mapnik/renderer_common/render_pattern.hpp>
 #include <mapnik/renderer_common/pattern_alignment.hpp>
@@ -258,6 +259,10 @@ void agg_renderer<T0, T1>::process(line_pattern_symbolizer const& sym,
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     if (filename.empty())
         return;
+
+    if (!symbolizer_anchor_cond<line_pattern_symbolizer>(sym,  feature, common_))
+        return;
+
     ras_ptr->reset();
     if (gamma_method_ != gamma_method_enum::GAMMA_POWER || gamma_ != 1.0)
     {

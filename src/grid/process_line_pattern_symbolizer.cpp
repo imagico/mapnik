@@ -34,6 +34,7 @@
 #include <mapnik/vertex_converters.hpp>
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/parse_path.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 
 #include <mapnik/warning.hpp>
@@ -57,6 +58,10 @@ void grid_renderer<T>::process(line_pattern_symbolizer const& sym,
     const std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     if (filename.empty())
         return;
+
+    if (!symbolizer_anchor_cond<line_pattern_symbolizer>(sym,  feature, common_))
+        return;
+
     const auto mark = marker_cache::instance().find(filename, true);
     if (mark->is<mapnik::marker_null>())
         return;

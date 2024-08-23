@@ -33,6 +33,7 @@
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
 #include <mapnik/agg_rasterizer.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 
 #include <memory>
@@ -215,6 +216,9 @@ void cairo_renderer<T>::process(line_pattern_symbolizer const& sym,
     {
         return;
     }
+
+    if (!symbolizer_anchor_cond<line_pattern_symbolizer>(sym,  feature, common_))
+        return;
 
     const line_pattern_enum pattern = get<line_pattern_enum, keys::line_pattern>(sym, feature, common_.vars_);
     switch (pattern)

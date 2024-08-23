@@ -32,6 +32,7 @@
 #include <mapnik/vertex_processor.hpp>
 #include <mapnik/marker.hpp>
 #include <mapnik/marker_cache.hpp>
+#include <mapnik/renderer_common/symbolizer_anchor_cond.hpp>
 #include <mapnik/renderer_common/apply_vertex_converter.hpp>
 #include <mapnik/renderer_common/pattern_alignment.hpp>
 
@@ -45,6 +46,9 @@ void cairo_renderer<T>::process(polygon_pattern_symbolizer const& sym,
     std::string filename = get<std::string, keys::file>(sym, feature, common_.vars_);
     std::shared_ptr<mapnik::marker const> marker = mapnik::marker_cache::instance().find(filename, true);
     if (marker->is<mapnik::marker_null>())
+        return;
+
+    if (!symbolizer_anchor_cond<polygon_pattern_symbolizer>(sym,  feature, common_))
         return;
 
     using vertex_converter_type =
