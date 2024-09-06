@@ -44,6 +44,9 @@ feature_type_style::feature_type_style()
     , comp_op_()
     , opacity_(1.0f)
     , image_filters_inflate_(false)
+    , name_()
+    , gmic_()
+    , gmic_after_()
 {}
 
 feature_type_style::feature_type_style(feature_type_style const& rhs)
@@ -54,6 +57,9 @@ feature_type_style::feature_type_style(feature_type_style const& rhs)
     , comp_op_(rhs.comp_op_)
     , opacity_(rhs.opacity_)
     , image_filters_inflate_(rhs.image_filters_inflate_)
+    , name_(rhs.name_)
+    , gmic_(rhs.gmic_)
+    , gmic_after_(rhs.gmic_after_)
 {}
 
 feature_type_style::feature_type_style(feature_type_style&& rhs)
@@ -64,6 +70,9 @@ feature_type_style::feature_type_style(feature_type_style&& rhs)
     , comp_op_(std::move(rhs.comp_op_))
     , opacity_(std::move(rhs.opacity_))
     , image_filters_inflate_(std::move(rhs.image_filters_inflate_))
+    , name_(std::move(rhs.name_))
+    , gmic_(std::move(rhs.gmic_))
+    , gmic_after_(std::move(rhs.gmic_after_))
 {}
 
 feature_type_style& feature_type_style::operator=(feature_type_style rhs)
@@ -76,6 +85,9 @@ feature_type_style& feature_type_style::operator=(feature_type_style rhs)
     std::swap(this->comp_op_, rhs.comp_op_);
     std::swap(this->opacity_, rhs.opacity_);
     std::swap(this->image_filters_inflate_, rhs.image_filters_inflate_);
+    std::swap(this->name_, rhs.name_);
+    std::swap(this->gmic_, rhs.gmic_);
+    std::swap(this->gmic_after_, rhs.gmic_after_);
     return *this;
 }
 
@@ -83,7 +95,8 @@ bool feature_type_style::operator==(feature_type_style const& rhs) const
 {
     return (rules_ == rhs.rules_) && (filter_mode_ == rhs.filter_mode_) && (filters_ == rhs.filters_) &&
            (direct_filters_ == rhs.direct_filters_) && (comp_op_ == rhs.comp_op_) && (opacity_ == rhs.opacity_) &&
-           (image_filters_inflate_ == rhs.image_filters_inflate_);
+           (image_filters_inflate_ == rhs.image_filters_inflate_) && (name_ == rhs.name_) && (gmic_ == rhs.gmic_) && 
+           (gmic_after_ == rhs.gmic_after_);
 }
 
 void feature_type_style::add_rule(rule&& rule)
@@ -171,6 +184,36 @@ void feature_type_style::set_image_filters_inflate(bool inflate)
 bool feature_type_style::image_filters_inflate() const
 {
     return image_filters_inflate_;
+}
+
+void feature_type_style::set_name(std::string const& _name)
+{
+    name_ = _name;
+}
+
+std::string const& feature_type_style::name() const
+{
+    return name_;
+}
+
+void feature_type_style::set_gmic(std::string const& g)
+{
+    gmic_ = g;
+}
+
+std::string const& feature_type_style::gmic() const
+{
+    return gmic_;
+}
+
+void feature_type_style::set_gmic_after(std::string const& g)
+{
+    gmic_after_ = g;
+}
+
+std::string const& feature_type_style::gmic_after() const
+{
+    return gmic_after_;
 }
 
 } // namespace mapnik

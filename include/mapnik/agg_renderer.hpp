@@ -40,6 +40,12 @@
 #include <memory>
 #include <stack>
 
+#if defined(HAVE_GMIC)
+#define cimg_display 0
+#include <CImg.h>
+#include <gmic.h>
+#endif
+
 // fwd declaration to avoid dependence on agg headers
 namespace agg {
 struct trans_affine;
@@ -179,6 +185,8 @@ class MAPNIK_DECL agg_renderer : public feature_style_processor<agg_renderer<T0>
 
     inline attributes const& variables() const { return common_.vars_; }
 
+    std::shared_ptr<std::set<std::string>> anchors();
+
   protected:
     template<typename R>
     void debug_draw_box(R& buf, box2d<double> const& extent, double x, double y, double angle = 0.0);
@@ -189,6 +197,10 @@ class MAPNIK_DECL agg_renderer : public feature_style_processor<agg_renderer<T0>
     std::stack<std::reference_wrapper<buffer_type>> buffers_;
     buffer_stack<buffer_type> internal_buffers_;
     std::unique_ptr<buffer_type> inflated_buffer_;
+#if defined(HAVE_GMIC)
+    cimg_library::CImgList<float> gmic_buffers_;
+    cimg_library::CImgList<char> gmic_buffer_names_;
+#endif
     const std::unique_ptr<rasterizer> ras_ptr;
     gamma_method_enum gamma_method_;
     double gamma_;

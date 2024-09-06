@@ -59,6 +59,9 @@ function(create_pkg_config_file_mapnik _lib_name _description)
     if(USE_PROJ)
         list(APPEND m_requires "proj >= ${PROJ_MIN_VERSION}")
     endif()
+    if(USE_GMIC)
+        list(APPEND m_requires gmic)
+    endif()
     string(JOIN " " m_requires ${m_requires})
     string(CONFIGURE [[
 prefix=@CMAKE_INSTALL_PREFIX@

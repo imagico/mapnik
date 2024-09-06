@@ -2410,4 +2410,91 @@ MAPNIK_DECL std::size_t compare<image_any>(image_any const& im1, image_any const
     return util::apply_visitor(detail::visitor_compare(im2, threshold, alpha), im1);
 }
 
+#if defined(HAVE_GMIC)
+MAPNIK_DECL void convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<float>& gmic_data)
+{
+    using pixel_type = image_rgba8::pixel_type;
+
+    gmic_data.assign(data.width(),data.height(),1,4);
+
+    for (std::size_t y = 0; y < data.height(); ++y)
+    {
+        pixel_type const* row = data.get_row(y);
+        for (std::size_t x = 0; x < data.width(); ++x)
+        {
+            pixel_type rgba = row[x];
+            pixel_type r = rgba & 0xff;
+            pixel_type g = (rgba >> 8u) & 0xff;
+            pixel_type b = (rgba >> 16u) & 0xff;
+            pixel_type a = (rgba >> 24u) & 0xff;
+
+            gmic_data(x,y,0,0) = r;
+            gmic_data(x,y,0,1) = g;
+            gmic_data(x,y,0,2) = b;
+            gmic_data(x,y,0,3) = a;
+        }
+    }
+}
+
+template<typename T>
+MAPNIK_DECL void convert_to_gmic(T const& data, cimg_library::CImg<float>& gmic_data)
+{
+    throw std::runtime_error("Error: convert_to_gmic with " + std::string(typeid(data).name()) + " is not supported");
+}
+
+
+MAPNIK_DECL void convert_from_gmic(image_rgba8& data, cimg_library::CImg<float> const& gmic_data)
+{
+    using pixel_type = image_rgba8::pixel_type;
+
+    if ((gmic_data.width() < data.width()) || (gmic_data.height() < data.height()))
+    {
+        throw std::runtime_error("Error: convert_from_gmic: gmic image size ("+std::to_string(gmic_data.width())+"/"+std::to_string(gmic_data.width())+") smaller than render buffer size ("+std::to_string(data.width())+"/"+std::to_string(data.width())+")");
+    }
+
+    MAPNIK_LOG_ERROR(agg_renderer) << "convert_from_gmic: " << gmic_data.spectrum();
+
+    for (std::size_t y = 0; y < data.height(); ++y)
+    {
+        pixel_type* row = data.get_row(y);
+        for (std::size_t x = 0; x < data.width(); ++x)
+        {
+            pixel_type r, g, b, a;
+
+            if (gmic_data.spectrum() < 3) // retain original alpha and promote grayscale to rgb
+            {
+                r = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,0), 0.0f, 255.0f));
+                g = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,0), 0.0f, 255.0f));
+                b = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,0), 0.0f, 255.0f));
+                pixel_type rgba = row[x];
+                a = (rgba >> 24u) & 0xff;
+            }
+            else if (gmic_data.spectrum() >= 4) // full rgba
+            {
+                r = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,0), 0.0f, 255.0f));
+                g = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,1), 0.0f, 255.0f));
+                b = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,2), 0.0f, 255.0f));
+                a = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,3), 0.0f, 255.0f));
+            }
+            else // retain original alpha for rgb
+            {
+                r = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,0), 0.0f, 255.0f));
+                g = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,1), 0.0f, 255.0f));
+                b = static_cast<pixel_type>(detail::clamp(gmic_data(x,y,0,2), 0.0f, 255.0f));
+                pixel_type rgba = row[x];
+                a = (rgba >> 24u) & 0xff;
+            }
+
+            row[x] = (a << 24u) | (b << 16u) | (g << 8u) | (r);
+        }
+    }
+}
+
+template<typename T>
+MAPNIK_DECL void convert_from_gmic(T& data, cimg_library::CImg<float> const& gmic_data)
+{
+    throw std::runtime_error("Error: convert_from_gmic with " + std::string(typeid(data).name()) + " is not supported");
+}
+#endif
+
 } // namespace mapnik

@@ -122,6 +122,8 @@ class MAPNIK_DECL cairo_renderer : public feature_style_processor<cairo_renderer
 
     inline attributes const& variables() const { return common_.vars_; }
 
+    std::shared_ptr<std::set<std::string>> anchors() const { return std::shared_ptr<std::set<std::string>>(); }
+
     void render_marker(pixel_position const& pos,
                        marker const& marker,
                        agg::trans_affine const& mtx,

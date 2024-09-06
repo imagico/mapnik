@@ -36,6 +36,7 @@
 
 // stl
 #include <map>
+#include <set>
 #include <string>
 #include <memory>
 #include <optional>
@@ -92,6 +93,9 @@ class MAPNIK_DECL datasource : private util::noncopyable
         // default implementation without context use features method
         return features(q);
     }
+    virtual bool add_anchors(std::shared_ptr<std::set<std::string>> const anchors) const { return true; }
+    virtual bool clear_anchors() const { return true; }
+
     virtual std::optional<datasource_geometry_t> get_geometry_type() const = 0;
     virtual featureset_ptr features(query const& q) const = 0;
     virtual featureset_ptr features_at_point(coord2d const& pt, double tol = 0) const = 0;

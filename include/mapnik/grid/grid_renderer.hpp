@@ -116,6 +116,8 @@ class MAPNIK_DECL grid_renderer : public feature_style_processor<grid_renderer<T
 
     inline attributes const& variables() const { return common_.vars_; }
 
+    std::shared_ptr<std::set<std::string>> anchors() const { return std::shared_ptr<std::set<std::string>>(); }
+
   private:
     buffer_type& pixmap_;
     const std::unique_ptr<grid_rasterizer> ras_ptr;

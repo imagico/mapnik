@@ -69,6 +69,8 @@ class test_renderer : public mapnik::feature_style_processor<test_renderer>
 
     mapnik::attributes const& variables() const { return vars_; }
 
+    std::shared_ptr<std::set<std::string>> anchors() const { return std::shared_ptr<std::set<std::string>>(); }
+
     mapnik::eAttributeCollectionPolicy attribute_collection_policy() const
     {
         return mapnik::eAttributeCollectionPolicy::DEFAULT;

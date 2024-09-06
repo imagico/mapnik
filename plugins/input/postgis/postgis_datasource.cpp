@@ -66,6 +66,7 @@ postgis_datasource::postgis_datasource(parameters const& params)
     , table_(*params.get<std::string>("table", ""))
     , geometry_table_(*params.get<std::string>("geometry_table", ""))
     , geometry_field_(*params.get<std::string>("geometry_field", ""))
+    , anchors_table_(*params.get<std::string>("anchors_table", ""))
     , key_field_(*params.get<std::string>("key_field", ""))
     , cursor_fetch_size_(*params.get<mapnik::value_integer>("cursor_size", 0))
     , row_limit_(*params.get<mapnik::value_integer>("row_limit", 0))
@@ -342,6 +343,20 @@ postgis_datasource::postgis_datasource(parameters const& params)
             mapnik::progress_timer __stats2__(std::clog, "postgis_datasource::bind(get_column_description)");
 #endif
 
+
+            if (!anchors_table_.empty())
+            {
+                std::ostringstream s;
+                s << "CREATE TEMPORARY TABLE IF NOT EXISTS " << identifier(anchors_table_) << "(name TEXT PRIMARY KEY)";
+
+                if (!conn->execute(s.str()))
+                {
+                    std::ostringstream err;
+                    err << "PostGIS Plugin: Error creating anchors table: " << conn->status();
+                    throw mapnik::datasource_exception(err.str());
+                }
+            }
+
             std::ostringstream s;
             s << "SELECT * FROM " << populate_tokens(table_) << " LIMIT 0";
 
@@ -451,6 +466,85 @@ postgis_datasource::postgis_datasource(parameters const& params)
         if (!key_field_.empty())
         {
             extra_params["key_field"] = key_field_;
+        }
+    }
+}
+
+bool postgis_datasource::add_anchors(std::shared_ptr<std::set<std::string>> const anchors) const
+{
+    if (anchors_table_.empty()) return true;
+    else if (!anchors) return true;
+    else
+    {
+        CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
+
+        if (pool)
+        {
+            shared_ptr<Connection> conn = pool->borrowObject();
+            if (!conn)
+                return false;
+            if (conn->isOK())
+            {
+                MAPNIK_LOG_DEBUG(postgis) << "postgis_datasource::add_anchors: " << anchors_table_;
+
+                std::ostringstream s;
+
+                s << "CREATE TEMPORARY TABLE IF NOT EXISTS " << identifier(anchors_table_) << "(name TEXT PRIMARY KEY)";
+
+                if (!conn->execute(s.str()))
+                {
+                    std::ostringstream err;
+                    err << "PostGIS Plugin: Error creating anchors table: " << conn->status();
+                    throw mapnik::datasource_exception(err.str());
+                }
+
+                std::ostringstream s2;
+
+                s2 << "INSERT INTO " << identifier(anchors_table_) << " (name) VALUES ";
+
+                bool first = true;
+
+                for (auto & a : (*anchors))
+                {
+                    if (first)
+                    {
+                        first = false;
+                        s2 << "(" << literal(a) << ")";
+                    }
+                    else
+                    {
+                        s2 << ", (" << literal(a) << ")";
+                    }
+                }
+
+                s2 << " ON CONFLICT DO NOTHING";
+
+                return conn->execute(s2.str());
+            }
+        }
+    }
+}
+
+bool postgis_datasource::clear_anchors() const
+{
+    if (anchors_table_.empty()) return true;
+    else
+    {
+        CnxPool_ptr pool = ConnectionManager::instance().getPool(creator_.id());
+
+        if (pool)
+        {
+            shared_ptr<Connection> conn = pool->borrowObject();
+            if (!conn)
+                return false;
+            if (conn->isOK())
+            {
+                std::ostringstream s;
+
+                s << "DELETE FROM " << identifier(anchors_table_);
+
+                return conn->execute(s.str());
+            }
         }
     }
 }

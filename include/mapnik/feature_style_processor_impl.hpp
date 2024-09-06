@@ -130,22 +130,62 @@ void feature_style_processor<Processor>::apply(double scale_denom)
         scale_denom = mapnik::scale_denominator(m_.scale(), proj.is_geographic());
     scale_denom *= p.scale_factor(); // FIXME - we might want to comment this out
 
-    // Asynchronous query supports:
-    // This is a two steps process,
-    // first we setup all queries at layer level
-    // in a second time, we fetch the results and
-    // do the actual rendering
-
-    // Define processing context map used by datasources
-    // implementing asynchronous queries
-    feature_style_context_map ctx_map;
-
     if (!m_.layers().empty())
     {
-        layer_rendering_material root_mat(m_.layers().front(), proj);
-        prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
+        bool do_synchronous = false;
 
-        render_submaterials(root_mat, p);
+        // find out if any of the layers uses anchors_table - requiring synchronous layer processing
+        for (layer const& lyr : m_.layers())
+        {
+            if (lyr.visible(scale_denom))
+            {
+                //if (lyr.datasource()->has_anchors_table())
+                {
+                    do_synchronous = true;
+                    break;
+                }
+            }
+        }
+
+        if (do_synchronous)
+        {
+            MAPNIK_LOG_DEBUG(feature_style_processor) << "feature_style_processor: synchronous layer processing";
+
+            for (layer const& lyr : m_.layers())
+            {
+               if (lyr.visible(scale_denom))
+                {
+                    std::set<std::string> names;
+                    apply_to_layer(lyr,
+                                   p,
+                                   proj,
+                                   m_.scale(),
+                                   scale_denom,
+                                   m_.width(),
+                                   m_.height(),
+                                   m_.get_current_extent(),
+                                   m_.buffer_size(),
+                                   names);
+                }
+            }
+        }
+        else
+        {
+            // Asynchronous query supports:
+            // This is a two steps process,
+            // first we setup all queries at layer level
+            // in a second time, we fetch the results and
+            // do the actual rendering
+
+            // Define processing context map used by datasources
+            // implementing asynchronous queries
+            feature_style_context_map ctx_map;
+
+            layer_rendering_material root_mat(m_.layers().front(), proj);
+            prepare_layers(root_mat, m_.layers(), ctx_map, p, scale_denom);
+
+            render_submaterials(root_mat, p);
+        }
     }
 
     p.end_map_processing(m_);
@@ -196,6 +236,8 @@ void feature_style_processor<Processor>::apply_to_layer(layer const& lay,
 {
     feature_style_context_map ctx_map;
     layer_rendering_material mat(lay, proj0);
+
+    lay.datasource()->add_anchors(p.anchors());
 
     prepare_layer(mat, ctx_map, p, scale, scale_denom, width, height, extent, buffer_size, names);
 

@@ -73,6 +73,8 @@ class postgis_datasource : public datasource
     static const char* name();
     processor_context_ptr get_context(feature_style_context_map&) const override;
     featureset_ptr features_with_context(query const& q, processor_context_ptr ctx) const override;
+    bool add_anchors(std::shared_ptr<std::set<std::string>> const anchors) const override;
+    bool clear_anchors() const override;
     featureset_ptr features(query const& q) const override;
     featureset_ptr features_at_point(coord2d const& pt, double tol = 0) const override;
     mapnik::box2d<double> envelope() const override;
@@ -103,6 +105,7 @@ class postgis_datasource : public datasource
     const std::string table_;
     const std::string geometry_table_;
     const std::string geometry_field_;
+    const std::string anchors_table_;
     std::string parsed_schema_;
     std::string parsed_table_;
     std::string key_field_;

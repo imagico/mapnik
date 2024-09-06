@@ -39,6 +39,12 @@ MAPNIK_DISABLE_WARNING_POP
 #include <exception>
 #include <optional>
 
+#if defined(HAVE_GMIC)
+#define cimg_display 0
+#include <CImg.h>
+#include <gmic.h>
+#endif
+
 namespace mapnik {
 
 // fwd declares
@@ -405,6 +411,19 @@ void add_border(T& image)
         image(image.width() - 1, y) = 0xffff0000; // blue
     }
 }
+
+#if defined(HAVE_GMIC)
+MAPNIK_DECL void convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<float>& gmic_data);
+
+template<typename T>
+MAPNIK_DECL void convert_to_gmic(T const& data, cimg_library::CImg<float>& gmic_data);
+
+MAPNIK_DECL void convert_from_gmic(image_rgba8& data, cimg_library::CImg<float> const& gmic_data);
+
+template<typename T>
+MAPNIK_DECL void convert_from_gmic(T& data, cimg_library::CImg<float> const& gmic_data);
+#endif
+
 } // namespace mapnik
 
 #endif // MAPNIK_IMAGE_UTIL_HPP

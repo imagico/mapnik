@@ -158,14 +158,21 @@ class label_collision_detector4 : util::noncopyable
     using tree_t = quad_tree<label>;
     tree_t tree_;
 
-    std::set<std::string> anchors_;
+    std::shared_ptr<std::set<std::string>> anchors_;
 
   public:
     using query_iterator = tree_t::query_iterator;
 
     explicit label_collision_detector4(box2d<double> const& _extent)
         : tree_(_extent)
+        , anchors_(std::make_shared<std::set<std::string>>())
     {}
+
+    std::shared_ptr<std::set<std::string>> anchors()
+    {
+        MAPNIK_LOG_DEBUG(label_collision_detector4) << "label_collision_detector4::anchors anchors.size=" << anchors_->size();
+        return anchors_;
+    }
 
     bool has_placement(box2d<double> const& box)
     {
@@ -395,7 +402,7 @@ class label_collision_detector4 : util::noncopyable
             boost::algorithm::trim(cond);
             if (cond.front() == '!')
             {
-                if (anchors_.count(cond.substr(1))!=0)
+                if (anchors_->count(cond.substr(1))!=0)
                 {
                     //MAPNIK_LOG_ERROR(label_collision_detector4) << "has_anchor: " << cond << ": false";
                     return false;
@@ -403,7 +410,7 @@ class label_collision_detector4 : util::noncopyable
             }
             else
             {
-                if (anchors_.count(cond)==0)
+                if (anchors_->count(cond)==0)
                 {
                     //MAPNIK_LOG_ERROR(label_collision_detector4) << "has_anchor: " << cond << ": false";
                     return false;
@@ -464,17 +471,17 @@ class label_collision_detector4 : util::noncopyable
             if (a.front() == '!')
             {
                 //MAPNIK_LOG_ERROR(label_collision_detector4) << "add_anchor: erase " << a ;
-                anchors_.erase(a.substr(1));
+                anchors_->erase(a.substr(1));
             }
             else
             {
                 //MAPNIK_LOG_ERROR(label_collision_detector4) << "add_anchor: insert " << a ;
-                anchors_.insert(a);
+                anchors_->insert(a);
             }
         }
     }
 
-    void clear() { tree_.clear(); anchors_.clear(); }
+    void clear() { tree_.clear(); anchors_->clear(); }
 
     box2d<double> const& extent() const { return tree_.extent(); }
 

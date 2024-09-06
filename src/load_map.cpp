@@ -489,6 +489,8 @@ void map_parser::parse_style(Map& map, xml_node const& node)
         name = node.get_attr<std::string>("name");
         feature_type_style style;
 
+        style.set_name(name);
+
         filter_mode_e filter_mode = node.get_attr<filter_mode_e>("filter-mode", filter_mode_enum::FILTER_ALL);
         style.set_filter_mode(filter_mode);
 
@@ -539,6 +541,18 @@ void map_parser::parse_style(Map& map, xml_node const& node)
             {
                 throw config_error("failed to parse direct-image-filters: '" + *direct_filters + "'");
             }
+        }
+
+        // gmic
+        optional<std::string> gmic_command = node.get_opt_attr<std::string>("gmic");
+        if (gmic_command)
+        {
+            style.set_gmic(*gmic_command);
+        }
+        optional<std::string> gmic_after_command = node.get_opt_attr<std::string>("gmic-after");
+        if (gmic_after_command)
+        {
+            style.set_gmic_after(*gmic_after_command);
         }
 
         style.reserve(node.size());

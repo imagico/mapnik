@@ -34,6 +34,7 @@
 #include <vector>
 #include <cstddef>
 #include <optional>
+#include <string>
 
 namespace mapnik {
 
@@ -55,6 +56,9 @@ class MAPNIK_DECL feature_type_style
     std::optional<composite_mode_e> comp_op_;
     float opacity_;
     bool image_filters_inflate_;
+    std::string name_;
+    std::string gmic_;
+    std::string gmic_after_;
     friend void swap(feature_type_style& lhs, feature_type_style& rhs);
 
   public:
@@ -89,6 +93,15 @@ class MAPNIK_DECL feature_type_style
     void set_image_filters_inflate(bool inflate);
     bool image_filters_inflate() const;
     inline void reserve(std::size_t size) { rules_.reserve(size); }
+
+    void set_name(std::string const& _name);
+    std::string const& name() const;
+
+    // gmic
+    void set_gmic(std::string const& g);
+    std::string const& gmic() const;
+    void set_gmic_after(std::string const& g);
+    std::string const& gmic_after() const;
 
     ~feature_type_style() {}
 };

@@ -121,6 +121,8 @@ class MAPNIK_DECL svg_renderer : public feature_style_processor<svg_renderer<Out
 
     inline attributes const& variables() const { return common_.vars_; }
 
+    std::shared_ptr<std::set<std::string>> anchors() const { return std::shared_ptr<std::set<std::string>>(); }
+
     inline OutputIterator& get_output_iterator() { return output_iterator_; }
 
     inline const OutputIterator& get_output_iterator() const { return output_iterator_; }

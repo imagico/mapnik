@@ -65,8 +65,10 @@ class Connection
             close();
             throw mapnik::datasource_exception(err_msg);
         }
+        //PGresult* result =
+        //  PQexec(conn_, "SET DEFAULT_TRANSACTION_READ_ONLY = TRUE; SET CLIENT_MIN_MESSAGES = WARNING;");
         PGresult* result =
-          PQexec(conn_, "SET DEFAULT_TRANSACTION_READ_ONLY = TRUE; SET CLIENT_MIN_MESSAGES = WARNING;");
+          PQexec(conn_, "SET DEFAULT_TRANSACTION_READ_ONLY = FALSE; SET CLIENT_MIN_MESSAGES = WARNING;");
         bool ok = (result && (PQresultStatus(result) == PGRES_COMMAND_OK));
         if (result)
             PQclear(result);

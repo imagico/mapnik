@@ -58,6 +58,7 @@ MAPNIK_DISABLE_WARNING_POP
 
 // stl
 #include <cmath>
+#include <algorithm>
 
 namespace mapnik {
 
@@ -67,6 +68,10 @@ agg_renderer<T0, T1>::agg_renderer(Map const& m, T0& pixmap, double scale_factor
     , buffers_()
     , internal_buffers_(m.width(), m.height())
     , inflated_buffer_()
+#if defined(HAVE_GMIC)
+    , gmic_buffers_()
+    , gmic_buffer_names_()
+#endif
     , ras_ptr(std::make_unique<rasterizer>())
     , gamma_method_(gamma_method_enum::GAMMA_POWER)
     , gamma_(1.0)
@@ -87,6 +92,10 @@ agg_renderer<T0, T1>::agg_renderer(Map const& m,
     , buffers_()
     , internal_buffers_(req.width(), req.height())
     , inflated_buffer_()
+#if defined(HAVE_GMIC)
+    , gmic_buffers_()
+    , gmic_buffer_names_()
+#endif
     , ras_ptr(std::make_unique<rasterizer>())
     , gamma_method_(gamma_method_enum::GAMMA_POWER)
     , gamma_(1.0)
@@ -106,6 +115,10 @@ agg_renderer<T0, T1>::agg_renderer(Map const& m,
     , buffers_()
     , internal_buffers_(m.width(), m.height())
     , inflated_buffer_()
+#if defined(HAVE_GMIC)
+    , gmic_buffers_()
+    , gmic_buffer_names_()
+#endif
     , ras_ptr(std::make_unique<rasterizer>())
     , gamma_method_(gamma_method_enum::GAMMA_POWER)
     , gamma_(1.0)
@@ -189,12 +202,20 @@ void agg_renderer<T0, T1>::setup(Map const& m, buffer_type& pixmap)
                                                   m.background_image_opacity());
         util::apply_visitor(visitor, *bg_marker);
     }
+
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Scale=" << m.scale();
 }
 
 template<typename T0, typename T1>
 agg_renderer<T0, T1>::~agg_renderer()
 {}
+
+
+template<typename T0, typename T1>
+std::shared_ptr<std::set<std::string>> agg_renderer<T0, T1>::anchors()
+{
+    return common_.detector_->anchors();
+}
 
 template<typename T0, typename T1>
 void agg_renderer<T0, T1>::start_map_processing(Map const& map)
@@ -262,7 +283,7 @@ void agg_renderer<T0, T1>::start_style_processing(feature_type_style const& st)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start processing style";
 
-    if (st.comp_op() || st.image_filters().size() > 0 || st.get_opacity() < 1)
+    if (st.comp_op() || !st.gmic().empty() || !st.gmic_after().empty() || st.image_filters().size() > 0 || st.get_opacity() < 1)
     {
         if (st.image_filters_inflate())
         {
@@ -317,6 +338,7 @@ void agg_renderer<T0, T1>::end_style_processing(feature_type_style const& st)
     if (&current_buffer != &previous_buffer)
     {
         bool blend_from = false;
+        bool gmic_inactive = false;
         if (st.image_filters().size() > 0)
         {
             blend_from = true;
@@ -327,6 +349,45 @@ void agg_renderer<T0, T1>::end_style_processing(feature_type_style const& st)
             }
             mapnik::premultiply_alpha(current_buffer);
         }
+#if defined(HAVE_GMIC)
+        if (!st.gmic().empty())
+        {
+            mapnik::demultiply_alpha(current_buffer);
+            cimg_library::CImg<float> gmic_current;
+            convert_to_gmic(current_buffer, gmic_current);
+
+            gmic_current.move_to(gmic_buffers_);
+
+            std::string gmic_lbl = st.name();
+            std::replace(gmic_lbl.begin(), gmic_lbl.end(), '-', '_');
+
+            cimg_library::CImg<char>::string(gmic_lbl.c_str()).move_to(gmic_buffer_names_);
+
+            MAPNIK_LOG_ERROR(agg_renderer) << "gmic: " << gmic_lbl << ": " << st.gmic();
+
+            for (int i=0; i<gmic_buffer_names_.size(); ++i)
+                MAPNIK_LOG_ERROR(agg_renderer) << "gmic stack: " << std::string(gmic_buffer_names_(i));
+
+            try {
+                gmic(st.gmic().c_str(), gmic_buffers_, gmic_buffer_names_);
+            }
+            catch (gmic_exception &e)
+            {
+                throw std::runtime_error("GMIC ERROR: " + std::string(e.what()));
+            }
+
+            if (std::string(gmic_buffer_names_.back()).compare("use") == 0)
+            {
+                convert_from_gmic(current_buffer, gmic_buffers_.back());
+                gmic_buffers_.remove();
+                gmic_buffer_names_.remove();
+            }
+            else
+                gmic_inactive = true;
+
+            mapnik::premultiply_alpha(current_buffer);
+        }
+#endif
         if (st.comp_op())
         {
             composite(previous_buffer,
@@ -336,19 +397,58 @@ void agg_renderer<T0, T1>::end_style_processing(feature_type_style const& st)
                       -common_.t_.offset(),
                       -common_.t_.offset());
         }
-        else if (blend_from || st.get_opacity() < 1.0)
+        else if (blend_from || st.get_opacity() < 1.0 || !st.gmic().empty() || !st.gmic_after().empty())
         {
-            composite(previous_buffer,
-                      current_buffer,
-                      src_over,
-                      st.get_opacity(),
-                      -common_.t_.offset(),
-                      -common_.t_.offset());
+            if (!gmic_inactive)
+            {
+                composite(previous_buffer,
+                          current_buffer,
+                          src_over,
+                          st.get_opacity(),
+                          -common_.t_.offset(),
+                          -common_.t_.offset());
+            }
         }
         if (internal_buffers_.in_range() && &current_buffer == &internal_buffers_.top())
         {
             internal_buffers_.pop();
         }
+#if defined(HAVE_GMIC)
+        if (!st.gmic_after().empty())
+        {
+            mapnik::demultiply_alpha(previous_buffer);
+            cimg_library::CImg<float> gmic_current;
+            convert_to_gmic(previous_buffer, gmic_current);
+
+            gmic_current.move_to(gmic_buffers_);
+
+            std::string gmic_lbl = st.name();
+            std::replace(gmic_lbl.begin(), gmic_lbl.end(), '-', '_');
+
+            cimg_library::CImg<char>::string(gmic_lbl.c_str()).move_to(gmic_buffer_names_);
+
+            MAPNIK_LOG_ERROR(agg_renderer) << "gmic post-comp: " << gmic_lbl << ": " << st.gmic_after();
+
+            for (int i=0; i<gmic_buffer_names_.size(); ++i)
+                MAPNIK_LOG_ERROR(agg_renderer) << "gmic stack: " << std::string(gmic_buffer_names_(i));
+
+            try {
+                gmic(st.gmic_after().c_str(), gmic_buffers_, gmic_buffer_names_);
+            }
+            catch (gmic_exception &e)
+            {
+                throw std::runtime_error("GMIC ERROR: " + std::string(e.what()));
+            }
+
+            if (std::string(gmic_buffer_names_.back()).compare("use") == 0)
+            {
+                convert_from_gmic(previous_buffer, gmic_buffers_.back());
+                gmic_buffers_.remove();
+                gmic_buffer_names_.remove();
+            }
+            mapnik::premultiply_alpha(previous_buffer);
+        }
+#endif
     }
     if (st.direct_image_filters().size() > 0)
     {
