@@ -204,6 +204,7 @@ class MAPNIK_DECL agg_renderer : public feature_style_processor<agg_renderer<T0>
     const std::unique_ptr<rasterizer> ras_ptr;
     gamma_method_enum gamma_method_;
     double gamma_;
+    double scale_denominator_;
     renderer_common common_;
     void setup(Map const& m, buffer_type& pixmap);
 };

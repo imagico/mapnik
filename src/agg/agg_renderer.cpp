@@ -59,6 +59,7 @@ MAPNIK_DISABLE_WARNING_POP
 // stl
 #include <cmath>
 #include <algorithm>
+#include <sstream>
 
 namespace mapnik {
 
@@ -99,6 +100,7 @@ agg_renderer<T0, T1>::agg_renderer(Map const& m,
     , ras_ptr(std::make_unique<rasterizer>())
     , gamma_method_(gamma_method_enum::GAMMA_POWER)
     , gamma_(1.0)
+    , scale_denominator_(m.scale_denominator())
     , common_(m, req, vars, offset_x, offset_y, req.width(), req.height(), scale_factor)
 {
     setup(m, pixmap);
@@ -122,6 +124,7 @@ agg_renderer<T0, T1>::agg_renderer(Map const& m,
     , ras_ptr(std::make_unique<rasterizer>())
     , gamma_method_(gamma_method_enum::GAMMA_POWER)
     , gamma_(1.0)
+    , scale_denominator_(m.scale_denominator())
     , common_(m, attributes(), offset_x, offset_y, m.width(), m.height(), scale_factor, detector)
 {
     setup(m, pixmap);
@@ -222,6 +225,7 @@ void agg_renderer<T0, T1>::start_map_processing(Map const& map)
 {
     MAPNIK_LOG_DEBUG(agg_renderer) << "agg_renderer: Start map processing bbox=" << map.get_current_extent();
     ras_ptr->clip_box(0, 0, common_.width_, common_.height_);
+    scale_denominator_ = map.scale_denominator();
 }
 
 template<typename T0, typename T1>
@@ -368,8 +372,16 @@ void agg_renderer<T0, T1>::end_style_processing(feature_type_style const& st)
             for (int i=0; i<gmic_buffer_names_.size(); ++i)
                 MAPNIK_LOG_ERROR(agg_renderer) << "gmic stack: " << std::string(gmic_buffer_names_(i));
 
+            std::ostringstream s;
+            s << "_mapnik_scale_factor=" << common_.scale_factor_ << " ";
+            // to semantically match the definition of !scale_denominator! in PostGIS
+            // the internal mapnik scale_denominator needs to be multiplied with the scale factor
+            // compare feature_style_processor<Processor>::apply in feature_style_processor_impl.hpp
+            s << "_mapnik_scale_denominator=" << scale_denominator_*common_.scale_factor_ << " ";
+            s << st.gmic();
+
             try {
-                gmic(st.gmic().c_str(), gmic_buffers_, gmic_buffer_names_);
+                gmic(s.str().c_str(), gmic_buffers_, gmic_buffer_names_);
             }
             catch (gmic_exception &e)
             {
