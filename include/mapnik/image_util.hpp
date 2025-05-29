@@ -413,10 +413,10 @@ void add_border(T& image)
 }
 
 #if defined(HAVE_GMIC)
-MAPNIK_DECL void convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<float>& gmic_data);
+MAPNIK_DECL bool convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<float>& gmic_data);
 
 template<typename T>
-MAPNIK_DECL void convert_to_gmic(T const& data, cimg_library::CImg<float>& gmic_data);
+MAPNIK_DECL bool convert_to_gmic(T const& data, cimg_library::CImg<float>& gmic_data);
 
 MAPNIK_DECL void convert_from_gmic(image_rgba8& data, cimg_library::CImg<float> const& gmic_data);
 

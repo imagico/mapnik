@@ -358,7 +358,7 @@ void agg_renderer<T0, T1>::end_style_processing(feature_type_style const& st)
         {
             mapnik::demultiply_alpha(current_buffer);
             cimg_library::CImg<float> gmic_current;
-            convert_to_gmic(current_buffer, gmic_current);
+            bool is_trivial = convert_to_gmic(current_buffer, gmic_current);
 
             gmic_current.move_to(gmic_buffers_);
 
@@ -378,6 +378,7 @@ void agg_renderer<T0, T1>::end_style_processing(feature_type_style const& st)
             // the internal mapnik scale_denominator needs to be multiplied with the scale factor
             // compare feature_style_processor<Processor>::apply in feature_style_processor_impl.hpp
             s << "_mapnik_scale_denominator=" << scale_denominator_*common_.scale_factor_ << " ";
+            s << "_mapnik_render_trivial=" << (is_trivial?1:0) << " ";
             s << st.gmic();
 
             try {

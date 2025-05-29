@@ -2411,11 +2411,14 @@ MAPNIK_DECL std::size_t compare<image_any>(image_any const& im1, image_any const
 }
 
 #if defined(HAVE_GMIC)
-MAPNIK_DECL void convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<float>& gmic_data)
+MAPNIK_DECL bool convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<float>& gmic_data)
 {
     using pixel_type = image_rgba8::pixel_type;
 
     gmic_data.assign(data.width(),data.height(),1,4);
+
+    bool is_trivial = true;
+    pixel_type rgba0;
 
     for (std::size_t y = 0; y < data.height(); ++y)
     {
@@ -2423,6 +2426,8 @@ MAPNIK_DECL void convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<flo
         for (std::size_t x = 0; x < data.width(); ++x)
         {
             pixel_type rgba = row[x];
+            if ((x==0) && (y==0)) rgba0 = rgba;
+            else if (rgba != rgba0) is_trivial = false;
             pixel_type r = rgba & 0xff;
             pixel_type g = (rgba >> 8u) & 0xff;
             pixel_type b = (rgba >> 16u) & 0xff;
@@ -2434,10 +2439,11 @@ MAPNIK_DECL void convert_to_gmic(image_rgba8 const& data, cimg_library::CImg<flo
             gmic_data(x,y,0,3) = a;
         }
     }
+    return is_trivial;
 }
 
 template<typename T>
-MAPNIK_DECL void convert_to_gmic(T const& data, cimg_library::CImg<float>& gmic_data)
+MAPNIK_DECL bool convert_to_gmic(T const& data, cimg_library::CImg<float>& gmic_data)
 {
     throw std::runtime_error("Error: convert_to_gmic with " + std::string(typeid(data).name()) + " is not supported");
 }
